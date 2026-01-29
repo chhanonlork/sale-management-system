@@ -44,7 +44,7 @@ class EmployeeController extends Controller
         $request->validate([
             'name' => 'required',
             'position' => 'required',
-            'salary' => 'salary',
+            'salary' => 'required|numeric|min:0',
             'phone' => 'required',
             'start_date' => 'required|date',
         ]);

@@ -35,6 +35,14 @@
 
 @section('content')
     <div class="container-fluid py-4">
+        {{-- បង្ហាញ Message ពេលជោគជ័យ --}}
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 15px;">
+                <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
         <div class="card shadow-sm border-0" style="border-radius: 15px;">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h5 class="fw-bold mb-0 text-dark">
@@ -67,7 +75,8 @@
                                     <td class="ps-4 fw-bold text-primary">#{{ $employee->id }}</td>
                                     <td class="fw-bold text-dark">{{ $employee->name }}</td>
                                     <td>
-                                        <span class="badge bg-soft-info text-info rounded-pill px-3">
+                                        <span class="badge bg-soft-info text-info rounded-pill px-3" 
+                                              style="background-color: #e3f2fd; color: #0dcaf0;">
                                             {{ $employee->position }}
                                         </span>
                                     </td>
@@ -83,13 +92,17 @@
                                     <td class="ps-4">
                                         <span class="text-muted small">{{ $employee->email }}</span>
                                     </td>
-                                    <td class="small">{{ $employee->start_date }}</td>
+                                    {{-- បង្ហាញថ្ងៃខែជាទម្រង់ខ្មែរ ឬធម្មតា --}}
+                                    <td class="small">{{ \Carbon\Carbon::parse($employee->start_date)->format('d-M-Y') }}</td>
                                     <td class="text-center">
                                         <div class="btn-group shadow-sm rounded-pill overflow-hidden">
+                                            {{-- Edit Button --}}
                                             <button type="button" class="btn btn-sm btn-white text-warning border-end bg-white"
-                                                onclick="editEmployee({{ json_encode($employee) }})" title="កែប្រែ">
+                                                onclick='editEmployee(@json($employee))' title="កែប្រែ">
                                                 <i class="fas fa-edit"></i>
                                             </button>
+
+                                            {{-- Delete Form --}}
                                             <form action="{{ route('employees.destroy', $employee->id) }}" method="POST"
                                                 class="d-inline"
                                                 onsubmit="return confirm('តើបងពិតជាចង់លុបឈ្មោះ {{ $employee->name }} មែនទេ?');">
@@ -106,6 +119,10 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+                {{-- Pagination (ប្រសិនបើមាន) --}}
+                <div class="d-flex justify-content-end mt-3">
+                    {{-- {{ $employees->links() }} --}}
                 </div>
             </div>
         </div>
@@ -203,7 +220,8 @@
 
                 <form id="editForm" method="POST">
                     @csrf
-                    @method('PUT')
+                    @method('PUT') {{-- សំខាន់សម្រាប់ Update --}}
+                    
                     <div class="modal-body p-4 bg-white">
                         <div class="row g-3">
 
@@ -262,24 +280,34 @@
                                 បោះបង់
                             </button>
                         </div>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
-    </div>
 
     <script>
         function editEmployee(employee) {
+            // ដាក់តម្លៃចូលទៅក្នុង Input Fields
             document.getElementById('edit_name').value = employee.name;
             document.getElementById('edit_position').value = employee.position;
             document.getElementById('edit_phone').value = employee.phone;
             document.getElementById('edit_email').value = employee.email;
             document.getElementById('edit_salary').value = employee.salary;
-            document.getElementById('edit_start_date').value = employee.start_date;
+            
+            // កាត់យកតែផ្នែកកាលបរិច្ឆេទ (YYYY-MM-DD) ដើម្បីបង្ហាញក្នុង Input Date
+            if (employee.start_date) {
+                 document.getElementById('edit_start_date').value = employee.start_date.split('T')[0];
+            }
 
+            // ✅ ដោះស្រាយបញ្ហា 404: បង្កើត Link ឱ្យត្រូវតាម Route របស់ Laravel
             let form = document.getElementById('editForm');
-            form.action = '/employees/' + employee.id;
+            
+            // ប្រើ Base URL ពី Laravel Route ដើម្បីកុំឱ្យខុស
+            let baseUrl = "{{ route('employees.index') }}"; 
+            form.action = baseUrl + '/' + employee.id;
 
+            // បង្ហាញ Modal
             var myModal = new bootstrap.Modal(document.getElementById('editEmployeeModal'));
             myModal.show();
         }
