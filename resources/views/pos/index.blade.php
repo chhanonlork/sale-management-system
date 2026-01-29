@@ -17,7 +17,7 @@
             transition: all 0.2s ease;
             overflow: hidden;
             position: relative;
-            cursor: pointer;
+            cursor: default; /* ✅ កែមក default ដើម្បីកុំឱ្យចេញរូបដៃលើកាត */
         }
 
         .product-card:hover {
@@ -38,6 +38,7 @@
             width: 100%;
             transition: 0.2s;
             margin-top: auto;
+            cursor: pointer; /* ✅ ដាក់ pointer ឱ្យប៊ូតុង */
         }
 
         .btn-add-cart:hover {
@@ -100,72 +101,50 @@
             border-color: #11998e;
         }
 
+        /* Scrollbar */
         ::-webkit-scrollbar {
             width: 5px;
             height: 5px;
         }
-
         ::-webkit-scrollbar-thumb {
             background: #bbb;
             border-radius: 10px;
         }
 
-        /* រចនាផ្ទាំង Checkout ឱ្យទំនើប */
+        /* Checkout Modal Styles */
         .checkout-modal-container {
             text-align: center;
             font-family: 'Battambang', sans-serif;
         }
-
         .checkout-icon-circle {
-            width: 60px;
-            height: 60px;
-            background: #e0f7fa;
-            color: #00acc1;
+            width: 60px; height: 60px;
+            background: #e0f7fa; color: #00acc1;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 10px;
-            font-size: 30px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 10px; font-size: 30px;
         }
-
         .checkout-total-box {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 15px 0;
+            background: #f8f9fa; border-radius: 12px;
+            padding: 15px; margin: 15px 0;
             border: 1px dashed #ced4da;
         }
-
         .total-usd {
-            color: #28a745;
-            font-size: 2rem;
-            font-weight: 800;
-            line-height: 1;
-            display: block;
-            margin-bottom: 5px;
+            color: #28a745; font-size: 2rem;
+            font-weight: 800; line-height: 1;
+            display: block; margin-bottom: 5px;
         }
-
         .total-riel {
-            color: #007bff;
-            font-size: 1.1rem;
-            font-weight: 600;
+            color: #007bff; font-size: 1.1rem; font-weight: 600;
         }
-
-        /* Style សម្រាប់ Payment Option Buttons */
         .btn-check:checked + .payment-option {
             background-color: #e8f5e9;
-            border-color: #28a745;
-            color: #28a745;
+            border-color: #28a745; color: #28a745;
             box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
         }
         .payment-option {
-            transition: all 0.2s;
-            border: 2px solid #eee;
+            transition: all 0.2s; border: 2px solid #eee;
         }
-        .payment-option:hover {
-            border-color: #ccc;
-        }
+        .payment-option:hover { border-color: #ccc; }
     </style>
 
     <div class="row h-100 g-3">
@@ -190,29 +169,53 @@
                     <div class="row g-3" id="product-list">
                         @foreach($products as $product)
                             @php
-                                $imgUrl = $product->image ? asset('storage/' . $product->image) : 'https://placehold.co/400x400/png?text=No+Image';
+                                // ✅ Check: តើមានរូបភាពក្នុង DB និងក្នុង Folder ដែរឬទេ?
+                                $hasImage = !empty($product->image) && file_exists(public_path('storage/' . $product->image));
+                                $imgUrl = $hasImage ? asset('storage/' . $product->image) : null;
+                                
+                                // ✅ Addslashes: ការពារឈ្មោះដែលមានសញ្ញា ' ឬ "
+                                $safeName = addslashes($product->name);
                             @endphp
 
                             <div class="col-xl-3 col-lg-4 col-md-4 col-6 product-item"
                                 data-category="{{ $product->category_id }}" data-name="{{ strtolower($product->name) }}">
 
-                                <div class="card product-card h-100 p-2"
-                                    onclick="addToCart({{ $product->id }}, '{{ $product->name }}', {{ $product->sale_price }}, {{ $product->qty }}, '{{ $imgUrl }}')">
+                                {{-- ❌ ដក onclick ចេញពីទីនេះ --}}
+                                <div class="card product-card h-100 p-2">
 
-                                    <div class="card-img-top-wrapper"
-                                        style="height: 150px; overflow: hidden; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                                        <img src="{{ $imgUrl }}" alt="{{ $product->name }}" class="img-fluid"
-                                            style="max-height: 100%; max-width: 100%; object-fit: contain;"
-                                            onerror="this.onerror=null; this.src='https://placehold.co/400x400/png?text=No+Image';">
+                                    {{-- ✅ ផ្នែកបង្ហាញរូបភាព --}}
+                                    <div class="card-img-top-wrapper rounded bg-light mb-2"
+                                        style="height: 140px; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative;">
+                                        
+                                        @if($imgUrl)
+                                            <img src="{{ $imgUrl }}" alt="{{ $product->name }}" 
+                                                class="img-fluid" 
+                                                style="width: 100%; height: 100%; object-fit: contain;">
+                                        @else
+                                            <div class="text-center text-muted opacity-50">
+                                                <i class="fas fa-image fa-3x mb-2"></i>
+                                                <p class="small fw-bold mb-0" style="font-size: 0.7rem;">No Image</p>
+                                            </div>
+                                        @endif
+                                        
+                                        @if($product->qty <= 0)
+                                            <div class="position-absolute w-100 h-100 bg-dark bg-opacity-50 d-flex align-items-center justify-content-center text-white fw-bold">
+                                                អស់ស្តុក
+                                            </div>
+                                        @endif
                                     </div>
 
-                                    <div class="text-center d-flex flex-column flex-grow-1 pt-2">
+                                    <div class="text-center d-flex flex-column flex-grow-1">
                                         <h6 class="fw-bold text-dark text-truncate mb-1" title="{{ $product->name }}">
                                             {{ $product->name }}
                                         </h6>
                                         <small class="text-muted mb-2">ស្តុក: {{ $product->qty }}</small>
-                                        <button class="btn btn-add-cart">
-                                            <i class="fas fa-cart-plus"></i> ដាក់កន្ត្រក
+                                        <div class="fw-bold text-primary mb-2">${{ number_format($product->sale_price, 2) }}</div>
+                                        
+                                        {{-- ✅ ដាក់ onclick តែនៅលើប៊ូតុងនេះប៉ុណ្ណោះ --}}
+                                        <button type="button" class="btn btn-add-cart mt-auto"
+                                            onclick="addToCart({{ $product->id }}, '{{ $safeName }}', {{ $product->sale_price }}, {{ $product->qty }}, '{{ $imgUrl }}')">
+                                            <i class="fas fa-cart-plus me-1"></i> ដាក់កន្ត្រក
                                         </button>
                                     </div>
                                 </div>
@@ -242,7 +245,10 @@
                         </thead>
                         <tbody id="cart-items">
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-5">មិនទាន់មានទំនិញ</td>
+                                <td colspan="4" class="text-center text-muted py-5">
+                                    <i class="fas fa-shopping-basket fa-3x mb-3 text-light"></i><br>
+                                    មិនទាន់មានទំនិញ
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -250,11 +256,10 @@
 
                 <div class="card-footer bg-white p-3 border-top">
                     <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">សរុបបណ្តោះអាសន្ន:</span> <span id="sub-total" class="fw-bold">0 ៛</span>
+                        <span class="text-muted">សរុបទឹកប្រាក់គិតជាលុយ:</span> <span id="sub-total" class="fw-bold">0 ៛</span>
                     </div>
-                    <div class="d-flex justify-content-between mb-3 align-items-center">
-                        <h4 class="fw-bold text-dark m-0">សរុប:</h4>
-                        <h3 id="final-total" class="fw-bold text-success m-0">0 ៛</h3>
+                    <div class="d-flex justify-content-between mb-2">
+                         <span class="fw-bold text-dark m-0">សរុបទឹកប្រាក់គិតជាលុយ:</span> <span id="final-total-usd" class="fw-bold text-success m-0">$0.00</span>
                     </div>
                     <button class="btn btn-checkout" onclick="processCheckout()">
                         <i class="fas fa-money-bill-wave me-2"></i> គិតលុយ (Checkout)
@@ -274,6 +279,7 @@
         let cart = [];
         const EXCHANGE_RATE = 4000;
 
+        // Filter Category
         function filterCategory(catId, btn) {
             $('.btn-cat').removeClass('active'); $(btn).addClass('active');
             $('.product-item').each(function () {
@@ -282,6 +288,7 @@
             });
         }
 
+        // Search Product
         function searchProduct() {
             var value = $('#searchProduct').val().toLowerCase();
             $("#product-list .product-item").filter(function () {
@@ -289,6 +296,7 @@
             });
         }
 
+        // Add to Cart
         function addToCart(id, name, price, stock, image) {
             if (stock <= 0) { Toast.fire({ icon: 'error', title: 'អស់ស្តុកហើយ!' }); return; }
             let item = cart.find(i => i.id === id);
@@ -296,7 +304,7 @@
                 if (item.qty < stock) { item.qty++; Toast.fire({ icon: 'success', title: 'បានបន្ថែមចំនួន!' }); }
                 else { Toast.fire({ icon: 'warning', title: 'ចំនួនលើសស្តុក!' }); }
             } else {
-                cart.push({ id, name, price, qty: 1, image: image });
+                cart.push({ id, name, price, qty: 1, image: image }); // Image can be null
                 Toast.fire({ icon: 'success', title: 'បានដាក់ចូលកន្ត្រក!' });
             }
             renderCart();
@@ -304,13 +312,16 @@
 
         function formatRiel(amount) { return amount.toLocaleString('en-US'); }
 
+        // Render Cart
         function renderCart() {
             let tbody = document.getElementById('cart-items'); tbody.innerHTML = '';
             let totalUSD = 0; let count = 0;
 
             if (cart.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-5">មិនទាន់មានទំនិញ</td></tr>';
-                $('#sub-total, #final-total').text('0 ៛'); $('#cart-count').text(0); return;
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-5"><i class="fas fa-shopping-basket fa-3x mb-3 text-light"></i><br>មិនទាន់មានទំនិញ</td></tr>';
+                $('#sub-total').text('0 ៛'); 
+                $('#final-total-usd').text('$0.00');
+                $('#cart-count').text(0); return;
             }
 
             cart.forEach((item, index) => {
@@ -318,30 +329,37 @@
                 let itemTotalRiel = itemTotalUSD * EXCHANGE_RATE;
                 totalUSD += itemTotalUSD; count += item.qty;
 
+                // ✅ Check Image for Cart
+                let imgHtml = '';
+                if(item.image && item.image !== 'null' && item.image !== '') {
+                    imgHtml = `<img src="${item.image}" class="rounded shadow-sm border me-2" width="40" height="40" style="object-fit: cover;">`;
+                } else {
+                    imgHtml = `<div class="rounded shadow-sm border me-2 d-flex align-items-center justify-content-center bg-light text-muted" style="width:40px; height:40px;"><i class="fas fa-image small"></i></div>`;
+                }
+
                 tbody.innerHTML += `
-                                    <tr>
-                                        <td class="ps-3">
-                                            <div class="d-flex align-items-center">
-                                                <img src="${item.image}" 
-                                                     onerror="this.onerror=null; this.src='https://placehold.co/400x400/png?text=No+Image';"
-                                                     class="rounded shadow-sm border me-2" width="40" height="40" style="object-fit: cover;">
-                                                <div class="fw-bold text-truncate" style="max-width: 90px;" title="${item.name}">${item.name}</div>
-                                            </div>
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-outline-secondary" onclick="updateQty(${index}, -1)">-</button>
-                                                <button class="btn btn-light disabled text-dark" style="width:30px;">${item.qty}</button>
-                                                <button class="btn btn-outline-secondary" onclick="updateQty(${index}, 1)">+</button>
-                                            </div>
-                                        </td>
-                                        <td class="text-end fw-bold pe-3 text-primary">${formatRiel(itemTotalRiel)} ៛</td>
-                                        <td class="text-end pe-2"><i class="fas fa-trash text-danger" style="cursor:pointer;" onclick="removeItem(${index})"></i></td>
-                                    </tr>`;
+                    <tr>
+                        <td class="ps-3">
+                            <div class="d-flex align-items-center">
+                                ${imgHtml}
+                                <div class="fw-bold text-truncate" style="max-width: 90px;" title="${item.name}">${item.name}</div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary" onclick="updateQty(${index}, -1)">-</button>
+                                <button class="btn btn-light disabled text-dark" style="width:30px;">${item.qty}</button>
+                                <button class="btn btn-outline-secondary" onclick="updateQty(${index}, 1)">+</button>
+                            </div>
+                        </td>
+                        <td class="text-end fw-bold pe-3 text-primary">$${itemTotalUSD}</td>
+                        <td class="text-end pe-2"><i class="fas fa-trash text-danger" style="cursor:pointer;" onclick="removeItem(${index})"></i></td>
+                    </tr>`;
             });
 
             let totalRiel = totalUSD * EXCHANGE_RATE;
-            $('#sub-total, #final-total').text(formatRiel(totalRiel) + ' ៛');
+            $('#sub-total').text(formatRiel(totalRiel) + ' ៛');
+            $('#final-total-usd').text('$' + totalUSD);
             $('#cart-count').text(count);
         }
 
@@ -359,9 +377,7 @@
             renderCart();
         }
 
-        // ============================================
-        // ✅ កែប្រែ៖ មុខងារ Checkout ថ្មីជាមួយ Payment Method
-        // ============================================
+        // Checkout Process
         function processCheckout() {
             if (cart.length === 0) {
                 Swal.fire({ icon: 'warning', title: 'កន្ត្រកទទេ!', text: 'សូមជ្រើសរើសទំនិញជាមុនសិន', confirmButtonColor: '#ffc107'});
@@ -378,17 +394,15 @@
                     <div class="checkout-icon-circle">
                         <i class="fas fa-file-invoice-dollar"></i>
                     </div>
-                    <h3 class="fw-bold text-dark">បញ្ជាក់ការទូទាត់</h3>
-                    <p class="text-muted small">សូមជ្រើសរើសវិធីបង់ប្រាក់</p>
-
+                    <h3 class="fw-bold text-dark">បញ្ជាក់ការទូទាត់</h3>           
                     <div class="checkout-total-box">
                         <span class="total-label text-muted small">សរុបទឹកប្រាក់ត្រូវបង់</span>
                         <span class="total-usd">$${totalUSD.toFixed(2)}</span>
-                        <span class="total-riel">≈ ${formatRiel(totalRiel)} ៛</span>
+                        <span class="total-riel">${formatRiel(totalRiel)} ៛</span>
                     </div>
 
                     <div class="mb-3 text-start">
-                        <label class="form-label small fw-bold text-muted">វិធីបង់ប្រាក់:</label>
+                        <p class="text-muted small">សូមជ្រើសរើសវិធីបង់ប្រាក់</p>
                         <div class="row g-2">
                             <div class="col-4">
                                 <input type="radio" class="btn-check" name="payment_method" id="pay_cash" value="cash" checked>
@@ -412,7 +426,7 @@
                     </div>
 
                     <div id="qr-display" class="d-none mb-3 p-3 bg-white rounded border text-center">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=example_payment" class="img-fluid mb-2" style="width:120px;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=ExamplePayment" class="img-fluid mb-2" style="width:120px;">
                         <p class="small text-muted m-0">ស្កេនដើម្បីបង់ប្រាក់</p>
                     </div>
 
@@ -432,7 +446,6 @@
                 padding: '1.5rem',
                 customClass: { popup: 'rounded-4 shadow-lg' },
                 
-                // Logic ពេល Modal បើក (ដើម្បី Handle ការចុចប្តូរ Payment)
                 didOpen: () => {
                     const radios = Swal.getPopup().querySelectorAll('input[name="payment_method"]');
                     const qrDisplay = Swal.getPopup().querySelector('#qr-display');
@@ -448,7 +461,6 @@
                     });
                 },
                 
-                // Logic មុននឹងចុច Confirm (យកតម្លៃ Payment)
                 preConfirm: () => {
                     const selectedMethod = Swal.getPopup().querySelector('input[name="payment_method"]:checked').value;
                     return selectedMethod;
@@ -456,7 +468,7 @@
 
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const paymentMethod = result.value; // ទទួលបានវិធីបង់ប្រាក់ (cash, qr, card)
+                    const paymentMethod = result.value;
 
                     Swal.fire({
                         title: 'កំពុងដំណើរការ...',
@@ -472,7 +484,7 @@
                             _token: "{{ csrf_token() }}",
                             items: cart,
                             total_amount: totalUSD,
-                            payment_method: paymentMethod, // ✅ បញ្ជូនវិធីបង់ប្រាក់ទៅ Backend
+                            payment_method: paymentMethod,
                             customer_id: $('#customer_id').val() || 1
                         },
                         success: function (res) {

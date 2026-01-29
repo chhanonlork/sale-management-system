@@ -241,13 +241,6 @@
                         </a>
                     </div>
                 </div>
-
-                {{-- =========================================== --}}
-                {{-- 4. ការកំណត់ --}}
-                {{-- =========================================== --}}
-                <a href="{{ route('settings.index') }}" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                    <i class="fas fa-cog me-2"></i> ការកំណត់
-                </a>
             </div>
 
             <div class="col-md-10 p-4">

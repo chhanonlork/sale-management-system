@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Supplier;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\QueryException;
 
 class ProductController extends Controller
 {
@@ -94,11 +95,19 @@ class ProductController extends Controller
 
     public function destroy($id)
     {
-        $product = Product::findOrFail($id);
-        if ($product->image) {
-            Storage::disk('public')->delete($product->image);
+        try {
+            $product = Product::findOrFail($id);
+            $product->delete();
+
+            return redirect()->back()->with('success', 'លុបផលិតផលជោគជ័យ!');
+
+        } catch (QueryException $e) {
+            // ២. ចាប់ Error កូដ 23000 (ជាប់ Foreign Key)
+            if ($e->getCode() == "23000") {
+                return redirect()->back()->with('error', 'មិនអាចលុបបានទេ! ផលិតផលនេះធ្លាប់មានការលក់រួចហើយ។');
+            }
+            // Error ផ្សេងៗទៀត
+            return redirect()->back()->with('error', 'មានបញ្ហាក្នុងការលុប៖ ' . $e->getMessage());
         }
-        $product->delete();
-        return redirect()->route('products.index')->with('success', 'បានលុបទំនិញរួចរាល់');
     }
 }
